@@ -1,6 +1,6 @@
 ---
 - name: Install NVIDIA GPU drivers on Linux VM
-  hosts: 34.85.177.139   # instance-9 in VM
+  hosts: all
   become: true 
 
   tasks:
@@ -11,7 +11,7 @@
 
     - name: Download the installation script
       get_url:
-        url: https://raw.githubusercontent.com/GoogleCloudPlatform/compute-gpu-installation/main/linux/install_gpu_driver.py
+        url: https://raw.githubusercontent.com/InTensorfiers/compute-gpu-installation/main/linux/install_gpu_driver.py
         dest: /tmp/install_gpu_driver.py
 
     - name: Run the installation script

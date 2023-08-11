@@ -2,3 +2,6 @@ vms:
   hosts:
     intensorfier:
       ansible_host: 1.1.1.1 # change this
+      python_version: 3.9
+      conda_version: 23.5.2
+      conda_env_name: intensorfiers
