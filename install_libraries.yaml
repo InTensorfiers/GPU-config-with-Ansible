@@ -136,3 +136,11 @@
           - six==1.16.0
           - urllib3==2.0.3
           - watchdog==3.0.0
+
+    - name: Update TensorFlow, Keras, and NumPy
+      pip:
+        name:
+          - tensorflow
+          - keras
+          - numpy
+        state: latest
