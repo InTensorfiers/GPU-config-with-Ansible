@@ -1,6 +1,8 @@
 ---
-- name: Install NVIDIA GPU drivers on Linux VM
+- name: Install NVIDIA GPU drivers on Linux Machine
   hosts: all
+  vars:
+    conda_prefix: "{{ ansible_env.HOME }}/miniconda/envs/{{ conda_env_name }}"
   become: true
 
   tasks:
@@ -34,7 +36,7 @@
 
       - name: Download Miniconda
         get_url:
-          url: "https://repo.anaconda.com/miniconda/Miniconda3-py{{ python_version | replace('.', '') }}_{{ conda_version }}-0-Linux-{{ cpu_arch }}.sh"
+          url: "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-{{ cpu_arch }}.sh"
           dest: "{{ ansible_env.HOME }}/miniconda.sh"
 
       - name: Installing Miniconda
@@ -50,14 +52,34 @@
         register: lineinfile_result
         changed_when: lineinfile_result is changed
 
-    - name: Create conda environment with cudatoolkit
+    - name: Create conda environment with all libraries
       block:
+      - name: Update conda
+        command: /root/miniconda/bin/conda update -n base -c defaults conda -y
+
+      - name: Run conda init
+        command: /root/miniconda/bin/conda init
+
       - name: Creating Conda environment
-        shell: "conda create -y -n {{ conda_env_name }} python={{ python_version }}"
-        environment:
-          PATH: "{{ ansible_env.HOME }}/miniconda/bin:$PATH"
-#
-#
-#    - name: Install pip dependencies
-#      block:
-#        ## TODO
+        shell: "/root/miniconda/bin/conda create -y -n {{ conda_env_name }} python={{ python_version }}"
+
+      - name: Activate the created Conda environment
+        shell: "/root/miniconda/bin/activate {{ conda_env_name }}"
+
+      - name: Install CUDA Toolkit in conda environment
+        command: /root/miniconda/bin/conda install -n {{ conda_env_name }} -c conda-forge cudatoolkit=11.8.0 -y
+
+      - name: Install cuDNN and tensorflow
+        shell: "{{ conda_prefix }}/bin/pip install nvidia-cudnn-cu11==8.6.0.163 tensorflow==2.13.*"
+
+      - name: Add cuDNN path into conda environment
+        shell: |
+          mkdir -p {{ conda_prefix }}/etc/conda/activate.d && \
+          echo 'CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))' >> {{ conda_prefix }}/etc/conda/activate.d/env_vars.sh && \
+          echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{{ conda_prefix }}/lib/:$CUDNN_PATH/lib' >> {{ conda_prefix }}/etc/conda/activate.d/env_vars.sh
+
+      - name: Install Jupyter suite in conda environment
+        command: /root/miniconda/bin/conda install -n {{ conda_env_name }} -c anaconda jupyter -y
+
+      - name: Install other essential libraries
+        shell: "{{ conda_prefix }}/bin/pip install numpy pandas scikit-learn xgboost scipy matplotlib seaborn chardet"
