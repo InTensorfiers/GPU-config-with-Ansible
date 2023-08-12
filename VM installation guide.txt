@@ -24,7 +24,8 @@ ansible-playbook -i /mnt/c/Ansible/inventory/hosts.txt /mnt/c/Ansible/playbooks/
 
 
 ## run GPU install yaml
-ansible-playbook -i /mnt/c/Ansible/inventory/hosts.txt /mnt/c/Ansible/playbooks/GPU_install.yaml --private-key=~/.ssh/id_rsa
+ansible-playbook -i /mnt/c/Ansible/inventory/hosts.txt /mnt/c/Ansible/playbooks/GPU_config.yaml --private-key=~/.ssh/id_rsa    ## first
+ansible-playbook -i /mnt/c/Ansible/inventory/hosts.txt /mnt/c/Ansible/playbooks/install_libraries.yaml --private-key=~/.ssh/id_rsa  ## second
 
 
 ### install python dependencies 
