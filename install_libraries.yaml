@@ -1,0 +1,110 @@
+---
+- name: Install and Configure Environment
+  hosts: all
+  become: yes
+
+  tasks:
+    # First playbook tasks (CUDA, cuDNN, TensorFlow)
+    - name: Activate the 'test' Conda environment
+      shell: "/root/miniconda/bin/activate test"
+      args:
+        executable: /bin/bash
+      become_user: root
+      environment:
+        PATH: "/root/miniconda/bin:$PATH"
+      register: conda_activation_result
+      changed_when: false
+
+    - name: Install CUDA Toolkit in 'test' environment
+      command: /root/miniconda/bin/conda install -n test -c conda-forge cudatoolkit=11.8.0 -y
+      become_user: root
+      become: yes
+
+    - name: Install pip
+      package:
+        name: python3-pip
+        state: present
+      become_user: root
+      become: yes
+
+    - name: Install cuDNN using pip
+      pip:
+        name: nvidia-cudnn-cu11==8.6.0.163
+      become_user: root
+      become: yes
+
+    - name: Upgrade NumPy
+      pip:
+        name: numpy
+        state: latest
+      become_user: root
+      become: yes
+
+    - name: Install TensorFlow in 'test' environment
+      command: /root/miniconda/bin/conda install -n test tensorflow==2.12.0 -y
+      become_user: root
+      become: yes
+
+    # Second playbook tasks (Libraries and Verify)
+    - name: Install required packages
+      apt:
+        name: [python3, python3-pip]
+        state: latest
+      become_user: root
+      become: yes
+
+    - name: Install other required packages
+      command: "/root/miniconda/envs/test/bin/pip install torch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 pandas seaborn scipy scikit-learn gensim nltk xgboost"
+      become_user: root
+      become: yes
+
+    - name: Install Jupyter using Conda
+      pip:
+        name: jupyter
+        executable: /root/miniconda/envs/test/bin/pip
+      become_user: root
+      become: yes
+
+    - name: Start Jupyter Lab
+      command: "/root/miniconda/bin/jupyter lab --no-browser --allow-root --ip=0.0.0.0"
+      async: true
+      poll: 0
+      environment:
+        PATH: "/root/miniconda/bin:$PATH"
+      become_user: root
+      become: yes
+
+    - name: Update libstdc++ to resolve compatibility issue  ## resolving errors with compatibility here
+      command: "apt-get install -y libstdc++6"
+      become_user: root
+      become: yes
+
+    - name: Reinstall scipy to resolve compatibility issue
+      command: "/root/miniconda/envs/test/bin/pip install --force-reinstall scipy"
+      become_user: root
+      become: yes
+
+    - name: Install required Python packages using pip
+      pip:
+        name:
+          - torch
+          - numpy
+          - pandas
+          - scikit-learn
+          - gensim
+          - nltk
+          - xgboost
+          - keras
+        state: present
+      become_user: root
+      become: yes
+
+    - name: Install compatible versions of required libraries    ### compatibility add-ons
+      pip:
+        name: "{{ item.name }}=={{ item.version }}"
+      loop:
+        - { name: numpy, version: 1.22 }
+        - { name: jax, version: 0.3.15 }  
+        - { name: libclang, version: 13.0.0 }  
+        - { name: tensorflow-io-gcs-filesystem, version: 0.23.1 }  
+        - { name: tensorflow, version: 2.12.0 } 
